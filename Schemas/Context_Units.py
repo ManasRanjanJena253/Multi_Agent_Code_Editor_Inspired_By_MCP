@@ -2,7 +2,6 @@
 from pymongo import MongoClient
 
 
-
 # The database or our Context units will be having two collections inside it. i.e suggested_change and agent_workspace.
 
 # The working or role of suggested_change collection:
@@ -75,7 +74,7 @@ if 'agent_workspace' not in collections :
                         validator = validator,
                         validationAction = "error")
 
-    print("Aget_Workspace Collection Created.")
+    print("Agent_Workspace Collection Created.")
 
 else :
     print("Agent_Workspace Collection Already Exists.")
