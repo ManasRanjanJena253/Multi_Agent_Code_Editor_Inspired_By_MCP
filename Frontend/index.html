@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CodeMate - Multi-Agent Code Editor</title>
+    <style>
+        :root {
+            --primary: #1a3a54;
+            --secondary: #2c7873;
+            --accent: #6fb98f;
+            --light: #e7f5f2;
+            --dark: #1b2b36;
+            --gradient: linear-gradient(135deg, #1a3a54 0%, #2c7873 100%);
+            --shadow: 0 4px 6px rgba(28, 58, 84, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+
+        body {
+            background-color: var(--light);
+            color: var(--dark);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            background: var(--gradient);
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: var(--shadow);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            opacity: 0.1;
+            background-image:
+                radial-gradient(circle at 10% 20%, rgba(255, 255, 255, 0.3) 0%, transparent 10%),
+                radial-gradient(circle at 80% 40%, rgba(255, 255, 255, 0.2) 0%, transparent 15%),
+                radial-gradient(circle at 30% 80%, rgba(255, 255, 255, 0.3) 0%, transparent 8%);
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            z-index: 1;
+        }
+
+        .logo-icon {
+            width: 36px;
+            height: 36px;
+            background-color: white;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary);
+            font-weight: bold;
+            font-size: 1.2rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .logo:hover .logo-icon {
+            transform: rotate(5deg);
+        }
+
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            position: relative;
+        }
+
+        .main-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image:
+                radial-gradient(circle at 80% 10%, var(--accent) 0%, transparent 5%),
+                radial-gradient(circle at 20% 30%, var(--secondary) 0%, transparent 8%),
+                radial-gradient(circle at 70% 90%, var(--primary) 0%, transparent 10%);
+            opacity: 0.05;
+            z-index: -1;
+        }
+
+        .card {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            width: 100%;
+            max-width: 600px;
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(28, 58, 84, 0.15);
+        }
+
+        .card-header {
+            background: var(--gradient);
+            color: white;
+            padding: 1.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            position: relative;
+        }
+
+        .card-subtitle {
+            font-size: 0.95rem;
+            opacity: 0.9;
+            position: relative;
+        }
+
+        .card-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 60%);
+            transform: rotate(15deg);
+        }
+
+        .card-body {
+            padding: 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--dark);
+        }
+
+        .form-select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            font-size: 1rem;
+            background-color: white;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .form-select:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px rgba(111, 185, 143, 0.2);
+        }
+
+        .form-textarea {
+            width: 100%;
+            min-height: 120px;
+            padding: 0.75rem;
+            border: 1px solid rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            font-size: 1rem;
+            resize: vertical;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .form-textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px rgba(111, 185, 143, 0.2);
+        }
+
+        .form-group.disabled {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: var(--gradient);
+            border: none;
+            color: white;
+            box-shadow: 0 2px 4px rgba(26, 58, 84, 0.2);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(26, 58, 84, 0.3);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+            box-shadow: 0 1px 2px rgba(26, 58, 84, 0.3);
+        }
+
+        .card-footer {
+            padding: 1.5rem 2rem;
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .response-container {
+            margin-top: 2rem;
+            width: 100%;
+            max-width: 600px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+
+        .response-container.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .response-card {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        .response-header {
+            background-color: var(--secondary);
+            color: white;
+            padding: 1rem 1.5rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .response-header svg {
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .response-body {
+            padding: 1.5rem;
+        }
+
+        .response-code {
+            background-color: #f7f9fc;
+            padding: 1rem;
+            border-radius: 8px;
+            border-left: 4px solid var(--accent);
+            font-family: monospace;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .loading-dots span {
+            animation: loadingDots 1.4s infinite both;
+        }
+
+        .loading-dots span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .loading-dots span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes loadingDots {
+            0% { opacity: 0.2; }
+            20% { opacity: 1; }
+            100% { opacity: 0.2; }
+        }
+
+        .wave {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 10vh;
+            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 320'%3E%3Cpath fill='%232c7873' fill-opacity='0.08' d='M0,192L60,170.7C120,149,240,107,360,112C480,117,600,171,720,197.3C840,224,960,224,1080,208C1200,192,1320,160,1380,144L1440,128L1440,320L1380,320C1320,320,1200,320,1080,320C960,320,840,320,720,320C600,320,480,320,360,320C240,320,120,320,60,320L0,320Z'%3E%3C/path%3E%3C/svg%3E")
+                no-repeat;
+            background-size: cover;
+        }
+
+        footer {
+            background: var(--gradient);
+            color: white;
+            text-align: center;
+            padding: 1rem;
+            margin-top: 2rem;
+            position: relative;
+        }
+
+        footer a {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            opacity: 0.9;
+            transition: opacity 0.2s;
+        }
+
+        footer a:hover {
+            opacity: 1;
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            .card, .response-container {
+                max-width: 100%;
+            }
+
+            .card-body {
+                padding: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-bg"></div>
+        <div class="logo">
+            <div class="logo-icon">C</div>
+            CodeMate
+        </div>
+    </header>
+
+    <main>
+        <div class="main-bg"></div>
+        <div class="card">
+            <div class="card-header">
+                <h1 class="card-title">Start a New Coding Session</h1>
+                <p class="card-subtitle">Let our AI agents help you write and modify code</p>
+            </div>
+            <div class="card-body">
+                <form id="session-form">
+                    <div class="form-group">
+                        <label class="form-label">Task Type</label>
+                        <select class="form-select" id="task-select">
+                            <option value="">Select a task type</option>
+                            <option value="CodeWriting">Code Writing</option>
+                            <option value="CodeModification">Code Modification</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Programming Language</label>
+                        <select class="form-select" id="language-select">
+                            <option value="">Select a language</option>
+                            <option value="Python">Python</option>
+                            <option value="JavaScript">JavaScript</option>
+                            <option value="Java">Java</option>
+                            <option value="C++">C++</option>
+                            <option value="Go">Go</option>
+                        </select>
+                    </div>
+                    <div class="form-group disabled" id="prompt-group">
+                        <label class="form-label">Prompt (for Code Writing)</label>
+                        <textarea class="form-textarea" id="prompt-textarea" placeholder="Describe what you want the AI to write..."></textarea>
+                    </div>
+                    <div class="form-group disabled" id="code-group">
+                        <label class="form-label">Code (for Code Modification)</label>
+                        <textarea class="form-textarea" id="code-textarea" placeholder="Paste the code you want to modify..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="card-footer">
+                <button class="btn btn-primary" id="start-session-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="9 10 4 15 9 20"></polyline>
+                        <path d="M20 4v7a4 4 0 0 1-4 4H4"></path>
+                    </svg>
+                    Start Session
+                </button>
+            </div>
+        </div>
+
+        <div class="response-container" id="response-container">
+            <div class="response-card">
+                <div class="response-header">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                    Session Started
+                </div>
+                <div class="response-body">
+                    <p>Your session has been initialized with the following parameters:</p>
+                    <div class="response-code" id="response-code">
+                        <div class="loading">
+                            Processing request
+                            <span class="loading-dots">
+                                <span>.</span>
+                                <span>.</span>
+                                <span>.</span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="wave"></div>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 CodeMate | <a href="#">Documentation</a></p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+    // Form elements
+    const taskSelect = document.getElementById('task-select');
+    const promptGroup = document.getElementById('prompt-group');
+    const codeGroup = document.getElementById('code-group');
+    const promptTextarea = document.getElementById('prompt-textarea');
+    const codeTextarea = document.getElementById('code-textarea');
+    const startSessionBtn = document.getElementById('start-session-btn');
+    const responseContainer = document.getElementById('response-container');
+    const responseCode = document.getElementById('response-code');
+    const languageSelect = document.getElementById('language-select');
+
+    // Enable the appropriate textarea based on task selection
+    taskSelect.addEventListener('change', function() {
+        if (this.value === 'CodeWriting') {
+            promptGroup.classList.remove('disabled');
+            codeGroup.classList.add('disabled');
+            codeTextarea.value = '';
+        } else if (this.value === 'CodeModification') {
+            promptGroup.classList.add('disabled');
+            codeGroup.classList.remove('disabled');
+            promptTextarea.value = '';
+        } else {
+            promptGroup.classList.add('disabled');
+            codeGroup.classList.add('disabled');
+        }
+    });
+
+    // Add subtle animation to the card on hover
+    const card = document.querySelector('.card');
+    card.addEventListener('mousemove', function(e) {
+        const rect = card.getBoundingClientRect();
+        const x = e.clientX - rect.left; // x position within the element
+        const y = e.clientY - rect.top;  // y position within the element
+
+        const centerX = rect.width / 2;
+        const centerY = rect.height / 2;
+
+        const deltaX = (x - centerX) / centerX * 2; // -1 to 1
+        const deltaY = (y - centerY) / centerY * 2; // -1 to 1
+
+        card.style.transform = `perspective(1000px) rotateX(${-deltaY * 1}deg) rotateY(${deltaX * 1}deg) translateY(-5px)`;
+    });
+
+    card.addEventListener('mouseleave', function() {
+        card.style.transform = 'translateY(-5px)';
+        setTimeout(() => {
+            card.style.transform = '';
+        }, 100);
+    });
+
+    // Submit form and show response
+    startSessionBtn.addEventListener('click', function() {
+        const task = taskSelect.value;
+        const language = languageSelect.value;
+        const prompt = promptTextarea.value;
+        const userCode = codeTextarea.value;
+
+        // Validate form
+        if (!task) {
+            alert('Please select a task type.');
+            return;
+        }
+
+        if (!language) {
+            alert('Please select a programming language.');
+            return;
+        }
+
+        if (task === 'CodeWriting' && !prompt) {
+            alert('Please provide a prompt for code writing.');
+            return;
+        }
+
+        if (task === 'CodeModification' && !userCode) {
+            alert('Please provide code for modification.');
+            return;
+        }
+
+        // Show loading state
+        responseContainer.classList.add('visible');
+        responseCode.innerHTML = `<div class="loading">
+            Processing request
+            <span class="loading-dots">
+                <span>.</span>
+                <span>.</span>
+                <span>.</span>
+            </span>
+        </div>`;
+
+        // Create API request object
+        const requestData = {
+            task: task,
+            language: language
+        };
+
+        if (task === 'CodeWriting') {
+            requestData.prompt = prompt;
+        } else {
+            requestData.user_code = userCode;
+        }
+
+        // Make actual API call
+        fetch('/start-session', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            responseCode.textContent = JSON.stringify({
+                request: requestData,
+                response: data,
+                session_id: data.session_id || Math.floor(Math.random() * 10000)
+            }, null, 2);
+        })
+        .catch(error => {
+            responseCode.textContent = `Error: ${error.message}`;
+        });
+    });
+
+    // Add ripple effect to button
+    startSessionBtn.addEventListener('mousedown', function(e) {
+        const rect = this.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        const ripple = document.createElement('span');
+        ripple.style.position = 'absolute';
+        ripple.style.borderRadius = '50%';
+        ripple.style.backgroundColor = 'rgba(255, 255, 255, 0.3)';
+        ripple.style.width = '100px';
+        ripple.style.height = '100px';
+        ripple.style.left = x - 50 + 'px';
+        ripple.style.top = y - 50 + 'px';
+        ripple.style.transform = 'scale(0)';
+        ripple.style.transition = 'transform 0.5s';
+        ripple.style.pointerEvents = 'none';
+
+        this.style.position = 'relative';
+        this.style.overflow = 'hidden';
+        this.appendChild(ripple);
+
+        // Trigger animation on next frame
+        requestAnimationFrame(() => {
+            ripple.style.transform = 'scale(4)';
+            ripple.style.opacity = '0';
+
+            setTimeout(() => {
+                ripple.remove();
+            }, 500);
+        });
+    });
+});
+    </script>
+</body>
+</html>

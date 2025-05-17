@@ -3,7 +3,7 @@ from langchain.prompts.prompt import PromptTemplate
 from langchain.memory import ConversationSummaryBufferMemory
 from langchain_groq import ChatGroq
 from langchain.agents import initialize_agent, AgentType
-from agent_tools import tools
+from Agents.agent_tools import tools
 import os
 from dotenv import load_dotenv
 
@@ -13,7 +13,8 @@ api_key = os.getenv('GROQ_API_KEY')
 
 llm = ChatGroq(model_name = 'qwen-qwq-32b',
                groq_api_key = api_key,
-               temperature = 0.3)
+               temperature = 0.6)
+
 
 syntax_memory = ConversationSummaryBufferMemory(llm = llm)
 
@@ -30,10 +31,7 @@ The change type you will be proposing is 'SyntaxFix'. You can interact with othe
  You can also check their opinions on the change that you have proposed. You can't make changes to the code until and unless you are explicitly told to make changes on it. You have to respect every other agents (your colleagues) opinion and 
 respond to them in a constructive manner and also accept criticisms. Also the changes you have been proposing must have a reasoning behind them and a confidence score based on how confident are you and how impactful the code is for the code.
 You also have to analyze the changes proposed by other agents and give them constructive criticism, if any. And also gave those suggestions your confidence score on how impactful do you think the changes proposed by them are. This confidence score will be on
-a scale of -100 to 100, a negative score represents disapproval and a positive score represents approval. You can also change your reasoning for any change using the tools.'''
-
-print(syntax_agent.run(synt_prompt))
-print(syntax_memory)
+a scale of -100 to 100, a negative score represents disapproval and a positive score represents approval. You can also change your reasoning for any change using the tools.Just tell me your name.'''
 
 
 

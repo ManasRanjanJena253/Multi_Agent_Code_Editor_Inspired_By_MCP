@@ -25,6 +25,7 @@ from pymongo import MongoClient
 # 3. Optimization
 
 
+
 # Connecting to the server
 client = MongoClient(host = "localhost", port = 27017)
 db = client['Context_Units']

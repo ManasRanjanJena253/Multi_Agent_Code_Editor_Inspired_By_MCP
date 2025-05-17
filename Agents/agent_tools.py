@@ -6,15 +6,13 @@ from pymongo import MongoClient
 from langchain.prompts import PromptTemplate
 import random
 
-from Agents.Reviewer import review_agent
-
 # Connecting to the MongoDB client
 client = MongoClient(host = 'localhost', port = 27017)
 
-db = client['Context_units']
+db = client['Context_Units']
 suggested_changes = db['suggested_changes']    # Collection for logging in the infos
 agent_workspace = db['agent_workspace']    # Collection to view changes and discuss upon those changes.
-code_base = db['Code_Base']
+code_base = db['CodeBase']
 
 def generate_change_id():
     """This function will be used to generate change id at random."""
@@ -186,8 +184,7 @@ def give_final_confidence_score(agent_name : str, code_id : int, change_id : int
     """
 
     total_changes = suggested_changes.count_documents()
-    executed_changes = suggested_changes.find({"Executed": {"$exists": True}})
-    total_executed_changes = len(executed_changes)
+    total_executed_changes = suggested_changes.count_documents({"Executed": {"$exists": True}})
     if total_changes != total_executed_changes :
         return "There are still changes which are not executed it. Can't give final score now."
 
@@ -212,12 +209,12 @@ def execute_changes(change_type : str, change_id : int, code_id : int):
     from SyntaxFixer import syntax_agent
     from Optimizer import optimizer
     from DocAgent import doc_agent
+    from Reviewer import review_agent
 
-    opinions = agent_workspace.find({"CodeId": code_id, "ChangeId": change_id})
-    opinion_count = len(opinions)
+    opinion_count = agent_workspace.count_documents({"CodeId": code_id, "ChangeId": change_id})
     approved = agent_workspace.find({"CodeId": code_id, "ChangeId": change_id, "Approved": True})
     update_prompt = f"Executed the change with ChangeId: {change_id} and CodeId: {code_id}. Plz view the code again through view_code tool."
-    approval_count = len(approved)
+    approval_count = agent_workspace.count_documents({"CodeId": code_id, "ChangeId": change_id, "Approved": True})
     if opinion_count == approval_count:
         agg_score = 0
         for k in approved:
@@ -336,7 +333,7 @@ tools = [
         args_schema = ToolInput
     ),
     StructuredTool.from_function(
-        fun = view_code,
+        func = view_code,
         name = "view_code",
         description = "This function allows the user to view the code present in the shared workspace by the agents.",
         args_schema = ToolInput
