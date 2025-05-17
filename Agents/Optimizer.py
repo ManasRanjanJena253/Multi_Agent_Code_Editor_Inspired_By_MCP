@@ -35,4 +35,6 @@ print(optimizer.run(prompt))
 
 print(opt_memory)
 
+print(optimizer.run("Tell me the tools that are given to you, and also verify if you understand each tools usage."))
+
 

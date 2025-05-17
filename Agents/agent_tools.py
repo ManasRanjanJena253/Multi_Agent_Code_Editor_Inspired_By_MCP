@@ -20,19 +20,33 @@ def generate_change_id():
 
 @tool('fetch_recommended_changes')
 def fetch_recommended_changes(code_id : int, change_id : int):
-    """This function will be used to get all the changes recommended for a given snippet of code."""
+    """
+    This function will be used to get all the changes recommended for a given snippet of code.
+    :param code_id : It's the unique CodeId of the code you want to use any tools on.
+    :param change_id : It's the unique ChangeId of the change proposed by an agent for a particular code.
+    """
+
     changes = suggested_changes.find({"CodeId": code_id, "ChangeId": change_id})
     return changes
 
 @tool('get_executed_changes')
 def get_executed_changes(code_id : int):
-    """This function will be used to get all the executed changes and final_confidence sore of each change."""
+    """This function will be used to get all the executed changes and final_confidence sore of each change.
+    :param code_id : It's the unique CodeId of the code you want to use any tools on."""
     executed = suggested_changes.find({"CodeId": code_id, "Executed": True})
     return executed
 
 @tool('submit_score')
 def submit_score(code_id : int, change_id : int, source_agent : str, score : int, reasoning : str):
-    """This function will be used by agent to submit its confidence score/opinion about a particular change."""
+    """
+    This function will be used by agent to submit its confidence score/opinion about a particular change.
+    :param code_id : It's the unique CodeId of the code you want to use any tools on.
+    :param change_id : It's the unique ChangeId of the change proposed by an agent for a particular code.
+    :param source_agent : It's the name of the agent who is submitting the score.
+    :param score : This is the confidence score that you are going to submit.
+    :param reasoning : This is the reasoning to justify the score you gave.
+    """
+
     approved = True    # If the score is positive, the agent agrees with the change.
     if score < 0:
         approved = False
@@ -50,7 +64,13 @@ def submit_score(code_id : int, change_id : int, source_agent : str, score : int
 
 @tool('propose_change')
 def propose_change(code_id : int, content : str, change_type : str, agent_name : str):
-    """This function can be used to propose changes regarding the code that has been given to the agent."""
+    """
+    This function can be used to propose changes regarding the code that has been given to the agent.
+    :param code_id : It's the unique CodeId of the code you want to use any tools on.
+    :param content : It's the change that you are proposing.
+    :param change_type : It's the change type that you are proposing. It can be of three types : 1. SyntaxFix, 2. Optimization, 3. Documentation.
+    :param agent_name : It's the name of the agent who is proposing the change.
+    """
     docs = suggested_changes.find({"CodeId": code_id})
     change_id = generate_change_id()
     for k in docs:
@@ -72,8 +92,13 @@ def propose_change(code_id : int, content : str, change_type : str, agent_name :
 
 @tool('check_opinion')
 def check_opinion(code_id : int, change_id : int, source_agent : str = None):
-    """This functions lets the agent see the opinion and reasoning of other agents or an agent in particular, so they can interact with each other
-    if they don't like some agents working style."""
+    """
+    This functions lets the agent see the opinion and reasoning of other agents or an agent in particular, so they can interact with each other
+    if they don't like some agents working style.
+    :param code_id : It's the unique CodeId of the code you want to use any tools on.
+    :param change_id : It's the unique ChangeId of the change proposed by an agent for a particular code.
+    :param source_agent : It's optional, enter this only if you want to check the opinion of a particular agent. If not entered you will get the opinions of all the agents.
+    """
     if source_agent:
         doc = agent_workspace.find_one({"CodeId": code_id, "ChangeId": change_id, "SourceAgent": source_agent},
                                        {"ConfidenceScore": 1, "Reasoning": 1, "_id": 0})
@@ -85,7 +110,14 @@ def check_opinion(code_id : int, change_id : int, source_agent : str = None):
 
 @tool('interact_with_agent')
 def interact_with_agent(code_id : int, change_id : int, agent_name : str, source_agent : str, message : str):
-    """This function enables the agents to interact with each other upon a single change and come to a common reasoning."""
+    """
+    This function enables the agents to interact with each other upon a single change and come to a common reasoning.
+    :param code_id : It's the unique CodeId of the code you want to use any tools on.
+    :param change_id : It's the unique ChangeId of the change proposed by an agent for a particular code.
+    :param source_agent : It's the name of the agent you want to interact with.
+    :param agent_name : It's the name of the agent who is using this tool.
+    :param message : It's the message you want to send to the source_agent.
+    """
     from SyntaxFixer import syntax_agent
     from Optimizer import optimizer
     from DocAgent import doc_agent
@@ -119,12 +151,17 @@ def interact_with_agent(code_id : int, change_id : int, agent_name : str, source
     else :
         return "The model you are trying to communicate with is Out of your Scope."
 
-@tool('change_reasoning')
-def change_reasoning(agent_name : str, code_id : int, change_id : int, new_reasoning : str):
-    """This function will allow the agents to change their opinions if they felt like it after discussing with other agents."""
-    agent_workspace.update_one({"CodeId": code_id, "ChangeId": change_id, "SourceAgent": agent_name},
-                                        {"$set" : {"Reasoning": new_reasoning}})
-    return "Reasoning Changed Successfully."
+@tool('delete_proposal')
+def delete_proposal(agent_name : str, code_id : int, change_id : int):
+    """
+    This function will allow the agents to delete their proposed changes, if they no longer believe in that change.
+    :param agent_name : Name of the agent who is using this function to delete.
+    :param code_id : It's the unique CodeId of the code you want to use any tools on.
+    :param change_id : It's the unique ChangeId of the change proposed by an agent for a particular code."""
+
+    agent_workspace.delete_one({"CodeId": code_id, "ChangeId": change_id, "SourceAgent": agent_name})
+    return "The specified change deleted successfully."
+
 
 @tool('give_final_confidence_score')
 def give_final_confidence_score(agent_name : str, code_id : int, change_id : int, final_score : int):
@@ -135,9 +172,15 @@ def give_final_confidence_score(agent_name : str, code_id : int, change_id : int
         suggested_changes.update_one({"CodeId": code_id, "ChangeId": change_id},
                                      {"$set": {"Final_Confidence_Score": final_score}})
 
+        return "Fincal confidence score give successfully."
+
 @tool('execute_changes')
 def execute_changes(change_type : str, change_id : int, code_id : int):
-    """Function through which they can check if there suggested change is approved or not. If approved they can now apply that change to the id."""
+    """
+    Function through which they can check if there suggested change is approved or not. If approved they can now apply that change to the id.
+    :param change_type : This is the type of change you want to enquire for to see if it's approved by other agents to be executed.
+    :param code_id : It's the unique CodeId of the code you want to use any tools on.
+    :param change_id : It's the unique ChangeId of the change proposed by an agent for a particular code."""
 
     from SyntaxFixer import syntax_agent
     from Optimizer import optimizer
@@ -152,15 +195,24 @@ def execute_changes(change_type : str, change_id : int, code_id : int):
         for k in approved:
             agg_score += k["ConfidenceScore"]
         if agg_score >= 80:
-            prompt = """Your proposed changes have been made now you can make changes to the code based on the proposed change."""
+            prompt = """Your proposed changes have been approved, now you can make changes to the code based on the proposed change."""
             if change_type == 'SyntaxFix':
                 syntax_agent.run(prompt)
+                agent_workspace.delete_many({"CodeId": code_id, "ChangeId": change_id})
+                suggested_changes.update_one({"CodeId": code_id, "ChangeId": change_id},
+                                             {"$set": {"Executed": True}})
             elif change_type == 'Optimization' :
                 optimizer.run(prompt)
+                agent_workspace.delete_many({"CodeId": code_id, "ChangeId": change_id})
+                suggested_changes.update_one({"CodeId": code_id, "ChangeId": change_id},
+                                             {"$set": {"Executed": True}})
             else :
                 doc_agent.run(prompt)
+                agent_workspace.delete_many({"CodeId": code_id, "ChangeId": change_id})
+                suggested_changes.update_one({"CodeId": code_id, "ChangeId": change_id},
+                                             {"$set": {"Executed": True}})
         else :
-            return "Some agents don't think the change is necessary or that impactful. Plz try finding them and interacting with them through interact_with_agent tool"
+            return "Some agents don't think the change is necessary or that impactful. Plz try finding them (check_opinions) and interacting with them through interact_with_agent tool"
     else :
         not_approve_agent = agent_workspace.find({"CodeId": code_id, "ChangeId": change_id, "Approved": False})
         agents = []
@@ -223,9 +275,9 @@ tools = [
         args_schema = ToolInput
     ),
     StructuredTool.from_function(
-        func = change_reasoning,
-        name = "change_reasoning",
-        description = "You can use this function to change reasoning about a particular change, if you decided to change after conversing with other agents.",
+        func = delete_proposal,
+        name = "delete_proposal",
+        description = "You can use this function to delete a particular change that you have proposed and now don't want it to be executed, or you just changed your mind about that change.",
         args_schema = ToolInput
     ),
     StructuredTool.from_function(
@@ -240,11 +292,3 @@ tools = [
         description = "This function allows the agent to check whether you can execute the change with a particular id or not. It also enables it see which agents disapproved its proposed change.",
         args_schema = ToolInput
     )]
-
-
-
-
-
-
-
-
