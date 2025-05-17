@@ -78,3 +78,55 @@ if 'agent_workspace' not in collections :
 
 else :
     print("Agent_Workspace Collection Already Exists.")
+
+
+# Defining the schema for CodeBase
+
+validator = {
+    "$jsonSchema": {
+        "bsonType": "object",
+        "required": ["CodeId", "Code"],
+        "properties": {
+            "CodeId": {"bsonType": "int"},
+            "Code": {"bsonType": "string"},
+        }
+    }
+}
+
+if 'CodeBase' not in collections:
+    db.create_collection(name = "CodeBase",
+                         validator = validator,
+                         validationAction = "error")
+
+    print("Code_base Collection Created")
+
+else :
+    print("Code_Base Collection Already Exists")
+
+# Defining the schema for Session
+
+validator = {
+    "$jsonSchema": {
+        "bsonType": "object",
+        "required": ["CodeId", "SessionId", "OriginalCode", "UpdatedCode", "TotalChanges", "TaskType", "Language"],
+        "properties": {
+            "CodeId": {"bsonType": "int"},
+            "SessionId": {"bsonType": "int"},
+            "OriginalCode": {"bsonType": "string"},
+            "UpdatedCode": {"bsonType": "string"},
+            "TotalChanges": {"bsonType": "int"},
+            "TaskType": {"bsonType": "string"},
+            "Language": {"bsonType": "string"}
+        }
+    }
+}
+
+if 'Session' not in collections:
+    db.create_collection(name = "Session",
+                         validator = validator,
+                         validationAction = "error")
+
+    print("Session Collection Created")
+
+else :
+    print("Session Collection Already Exists")
