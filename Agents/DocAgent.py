@@ -1,5 +1,5 @@
 # Importing dependencies
-from langchain.memory import ConversationSummaryBufferMemory
+from langchain.memory import ConversationSummaryBufferMemory, ConversationBufferMemory
 from langchain_groq import ChatGroq
 from langchain.agents import initialize_agent, AgentType
 from langchain.prompts import PromptTemplate
@@ -8,23 +8,27 @@ from Agents.agent_tools import tools
 import os
 
 
+from langchain_google_genai import ChatGoogleGenerativeAI
 load_dotenv()
-api_key = os.getenv('GROQ_API_KEY')
+api_key = os.getenv('GOOGLE_API_KEY')
 
-llm = ChatGroq(
-    model_name = 'deepseek-r1-distill-llama-70b',
+llm = ChatGoogleGenerativeAI(
+    model = 'gemini-2.0-flash',
     temperature = 0.6,
-    groq_api_key = api_key
+    api_key = api_key
 )
 
 doc_memory = ConversationSummaryBufferMemory(llm = llm)
 
 doc_agent = initialize_agent(
     llm = llm,
-    memory = doc_memory,
+    memory = ConversationBufferMemory(),
     tools = tools,
-    agent = AgentType.OPENAI_MULTI_FUNCTIONS,
-    verbose = True
+    agent = AgentType.STRUCTURED_CHAT_ZERO_SHOT_REACT_DESCRIPTION,
+    verbose = True,
+    handle_parsing_errors = True,
+    agent_kwargs={"prefix": "Your name is DocAgent. The ChangeType you propose is Documentation.",
+                  "format_instructions": "You need to use your given tools to perform each task."}
 )
 
 doc_prompt = '''You are working in an organization responsible for improving the given code. You are assigned with the task of optimizing the time space complexity of the code in the best possible manner. Your name is DocAgent.

@@ -1,10 +1,11 @@
 # Importing dependencies
-from langchain.agents import tool
+from langchain.tools import tool
 from langchain.tools import StructuredTool
 from pydantic import BaseModel, Field
 from pymongo import MongoClient
 from langchain.prompts import PromptTemplate
 import random
+from typing import Optional
 
 # Connecting to the MongoDB client
 client = MongoClient(host = 'localhost', port = 27017)
@@ -14,12 +15,75 @@ suggested_changes = db['suggested_changes']    # Collection for logging in the i
 agent_workspace = db['agent_workspace']    # Collection to view changes and discuss upon those changes.
 code_base = db['CodeBase']
 
+# 1. View Code
+class ViewCodeInput(BaseModel):
+    code_id: int
+
+# 2. Suggest Change
+class ProposeChange(BaseModel):
+    code_id: int
+    content: str
+    change_type: str
+    agent_name: str
+
+# 3. Execute Changes
+class GetExecuteChangesInput(BaseModel):
+    code_id: int
+
+# 4. Submit Score
+class SubmitScoreInput(BaseModel):
+    code_id: int
+    change_id: int
+    source_agent: str
+    score: int
+    reasoning: str
+
+# 5. Fetch Recommended Changes
+class FetchRecommendedChangesInput(BaseModel):
+    code_id: int
+    change_id: int
+
+# 6. Fetch Code With Changes
+class FetchCodeWithChangesInput(BaseModel):
+    code_id: int
+
+# 7. Interact With Agent
+class InteractWithAgentInput(BaseModel):
+    code_id: int
+    change_id: int
+    agent_name: str
+    source_agent: str
+    message: str
+
+
+# 8. Final Review
+class FinalReviewInput(BaseModel):
+    agent_name: str
+    code_id: int
+    change_id: int
+    final_score: int
+
+class ExecuteChanges(BaseModel):
+    change_type: str
+    change_id: int
+    code_id: int
+
+class DeleteProposal(BaseModel):
+    agent_name: str
+    code_id: int
+    change_id: int
+
+class CheckOpinion(BaseModel):
+    code_id: int
+    change_id: int
+    source_agent: str = None
+
 def generate_change_id():
     """This function will be used to generate change id at random."""
     change_id = random.randrange(1, 1000)
     return change_id
 
-@tool('view_code')
+@tool('view_code', args_schema = ViewCodeInput)
 def view_code(code_id : int):
     """
     This function is used to view the code with the specific code_id.
@@ -28,7 +92,7 @@ def view_code(code_id : int):
     data = code_base.find_one({"CodeId": code_id})
     return data['Code']
 
-@tool('fetch_recommended_changes')
+@tool('fetch_recommended_changes', args_schema = FetchRecommendedChangesInput)
 def fetch_recommended_changes(code_id : int, change_id : int):
     """
     This function will be used to get all the changes recommended for a given snippet of code.
@@ -37,16 +101,16 @@ def fetch_recommended_changes(code_id : int, change_id : int):
     """
 
     changes = suggested_changes.find({"CodeId": code_id, "ChangeId": change_id})
-    return changes
+    return list(changes)
 
-@tool('get_executed_changes')
+@tool('get_executed_changes', args_schema = GetExecuteChangesInput)
 def get_executed_changes(code_id : int):
     """This function will be used to get all the executed changes and final_confidence sore of each change.
     :param code_id: It's the unique CodeId of the code you want to use any tools on."""
     executed = suggested_changes.find({"CodeId": code_id, "Executed": True})
-    return executed
+    return list(executed)
 
-@tool('submit_score')
+@tool('submit_score', args_schema = SubmitScoreInput)
 def submit_score(code_id : int, change_id : int, source_agent : str, score : int, reasoning : str):
     """
     This function will be used by agent to submit its confidence score/opinion about a particular change.
@@ -72,7 +136,7 @@ def submit_score(code_id : int, change_id : int, source_agent : str, score : int
     agent_workspace.insert_one({"CodeId": code_id, "ChangeId": change_id, "SourceAgent": source_agent,
                                 "Reasoning": reasoning, "Approved": approved, "ConfidenceScore": score})
 
-@tool('propose_change')
+@tool('propose_change', args_schema = ProposeChange)
 def propose_change(code_id : int, content : str, change_type : str, agent_name : str):
     """
     This function can be used to propose changes regarding the code that has been given to the agent.
@@ -97,10 +161,10 @@ def propose_change(code_id : int, content : str, change_type : str, agent_name :
             return "YOU ARE NOT AUTHORIZED FOR THIS CHANGE"
 
         suggested_changes.insert_one({"CodeId": code_id, "ChangeId": change_id, "Content": content, "ChangeType": change_type})
-        return "Your Purpose Added Successfully"
+        return "Your Proposal Added Successfully"
 
 
-@tool('check_opinion')
+@tool('check_opinion', args_schema = CheckOpinion)
 def check_opinion(code_id : int, change_id : int, source_agent : str = None):
     """
     This functions lets the agent see the opinion and reasoning of other agents or an agent in particular, so they can interact with each other
@@ -118,7 +182,7 @@ def check_opinion(code_id : int, change_id : int, source_agent : str = None):
 
     return doc
 
-@tool('interact_with_agent')
+@tool('interact_with_agent', args_schema = InteractWithAgentInput)
 def interact_with_agent(code_id : int, change_id : int, agent_name : str, source_agent : str, message : str):
     """
     This function enables the agents to interact with each other upon a single change and come to a common reasoning.
@@ -161,7 +225,7 @@ def interact_with_agent(code_id : int, change_id : int, agent_name : str, source
     else :
         return "The model you are trying to communicate with is Out of your Scope."
 
-@tool('delete_proposal')
+@tool('delete_proposal', args_schema = DeleteProposal)
 def delete_proposal(agent_name : str, code_id : int, change_id : int):
     """
     This function will allow the agents to delete their proposed changes, if they no longer believe in that change.
@@ -173,7 +237,7 @@ def delete_proposal(agent_name : str, code_id : int, change_id : int):
     return "The specified change deleted successfully."
 
 
-@tool('give_final_confidence_score')
+@tool('give_final_confidence_score', args_schema = FinalReviewInput)
 def give_final_confidence_score(agent_name : str, code_id : int, change_id : int, final_score : int):
     """
     This function enables the reviewer agent to give final confidence score to the edited code. It's calculated by comparing it to original code.
@@ -183,7 +247,7 @@ def give_final_confidence_score(agent_name : str, code_id : int, change_id : int
     :param final_score: The final score that you are giving to the updated code.
     """
 
-    total_changes = suggested_changes.count_documents()
+    total_changes = suggested_changes.count_documents({"CodeId": code_id})
     total_executed_changes = suggested_changes.count_documents({"Executed": {"$exists": True}})
     if total_changes != total_executed_changes :
         return "There are still changes which are not executed it. Can't give final score now."
@@ -197,7 +261,7 @@ def give_final_confidence_score(agent_name : str, code_id : int, change_id : int
 
             return "Final confidence score given successfully."
 
-@tool('execute_changes')
+@tool('execute_changes', args_schema = ExecuteChanges)
 def execute_changes(change_type : str, change_id : int, code_id : int):
     """
     Function through which they can check if there suggested change is approved or not. If approved they can now apply that change to the id.
@@ -262,79 +326,5 @@ def execute_changes(change_type : str, change_id : int, code_id : int):
 
             return f"The agents who disapproved your change are : {agents}. Try contacting them through interact_with_agent tool for there opinion or check there reasoning using check_opinion tool"
 
-
-# Creating an args_schema for the inputs of our functions
-
-class ToolInput(BaseModel):
-    agent_name : str = Field(default = "", description = "This is the name of the agent who is performing/calling the tools")
-    source_agent : str = Field(default = "", description = "This is the name of the agent who have given a particular suggestion or change regarding the code.")
-    code_id : int = Field(default = "", description = "This is the unique id for a code. It's same for the same piece of code.")
-    change_id : int = Field(default = "", description = "This is the unique id for a change.")
-    score : int = Field(default = "", description = "This is the confidence score given to a change by a model when analyzing it.")
-    message : str = Field(default = "", description = "This is the message given by the agent to communicate with other agent.")
-    new_reasoning : str = Field(default = "", description = "This is the reasoning which is to be replaced in place of original reasoning by an agent, if it changed it's decision")
-    final_score : int = Field(default = "", description = "This is the final score given to the final code by the Reviewer Agent. It's based on its improvement compared to original code")
-    reasoning : str = Field(default = "", description = "This is the reason given by an agent for its proposed change, or the reason or the opinion of other agents on some change.")
-# Creating StructuredTools for better usage by the agent
-
-tools = [
-    StructuredTool.from_function(
-        func = fetch_recommended_changes,
-        name = "fetch_recommended_changes",
-        description = "This function is to be used to get all the changes proposed for a given code after giving the codes id as argument. Used for reviewing purposes.",
-        args_schema = ToolInput
-    ),
-    StructuredTool.from_function(
-        func = get_executed_changes,
-        name = "get_executed_changes",
-        description = "This function is to be used to get all the changes which have been executed till now for a particular code. It is for reviewing what are the changes done to the original code and giving final confidence score.",
-        args_schema = ToolInput
-    ),
-    StructuredTool.from_function(
-        func = submit_score,
-        name = "submit_score",
-        description = "This function is to be used to enable agents to give their own confidence score and reasoning/opinion to a particular change that is recommended. The score lies between -100 to 100. Negative if you don't agree with the change and positive if you agree.",
-        args_schema = ToolInput
-    ),
-    StructuredTool.from_function(
-        func = propose_change,
-        name = 'propose_change',
-        decription = "Using this function you can propose your own changes for the code and let other agents review it.",
-        args_schema = ToolInput
-    ),
-    StructuredTool.from_function(
-        func = check_opinion,
-        name = "check_opinion",
-        description = "Using this function you can check the opinions of other agents about a particular change.",
-        args_schema = ToolInput
-    ),
-    StructuredTool.from_function(
-        func = interact_with_agent,
-        name = "interact_with_agent",
-        description = "This function enables you to interact with other agents. You can use both for sending message and also replying to a sent message.",
-        args_schema = ToolInput
-    ),
-    StructuredTool.from_function(
-        func = delete_proposal,
-        name = "delete_proposal",
-        description = "You can use this function to delete a particular change that you have proposed and now don't want it to be executed, or you just changed your mind about that change.",
-        args_schema = ToolInput
-    ),
-    StructuredTool.from_function(
-        func = give_final_confidence_score,
-        name = "give_final_confidence_score",
-        description = "This function is ONLY for Reviewer Agent. This enables the agent to give its final score after comparing the original code and changed code on a scale of 1 to 100.",
-        args_schema = ToolInput
-    ),
-    StructuredTool.from_function(
-        func = execute_changes,
-        name = "execute_changes",
-        description = "This function allows the agent to check whether you can execute the change with a particular id or not. It also enables it see which agents disapproved its proposed change.",
-        args_schema = ToolInput
-    ),
-    StructuredTool.from_function(
-        func = view_code,
-        name = "view_code",
-        description = "This function allows the user to view the code present in the shared workspace by the agents.",
-        args_schema = ToolInput
-    )]
+tools = [view_code, fetch_recommended_changes, interact_with_agent, submit_score, execute_changes, propose_change, delete_proposal, check_opinion]
+reviewer_tools = [view_code, fetch_recommended_changes, interact_with_agent, submit_score, execute_changes, propose_change, delete_proposal, check_opinion, give_final_confidence_score]

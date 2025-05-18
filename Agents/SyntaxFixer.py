@@ -1,29 +1,34 @@
 # Importing dependencies
 from langchain.prompts.prompt import PromptTemplate
-from langchain.memory import ConversationSummaryBufferMemory
+from langchain.memory import ConversationSummaryBufferMemory, ConversationBufferMemory
 from langchain_groq import ChatGroq
 from langchain.agents import initialize_agent, AgentType
 from Agents.agent_tools import tools
 import os
 from dotenv import load_dotenv
 
-
+from langchain_google_genai import ChatGoogleGenerativeAI
 load_dotenv()
-api_key = os.getenv('GROQ_API_KEY')
+api_key = os.getenv('GOOGLE_API_KEY')
 
-llm = ChatGroq(model_name = 'qwen-qwq-32b',
-               groq_api_key = api_key,
-               temperature = 0.6)
+llm = ChatGoogleGenerativeAI(
+    model = 'gemini-2.0-flash',
+    temperature = 0.6,
+    api_key = api_key
+)
 
 
 syntax_memory = ConversationSummaryBufferMemory(llm = llm)
 
 syntax_agent = initialize_agent(
     llm = llm,
+    memory = ConversationBufferMemory(),
     tools = tools,
-    agent = AgentType.OPENAI_MULTI_FUNCTIONS,
-    memory = syntax_memory,
-    verbose = True
+    agent = AgentType.STRUCTURED_CHAT_ZERO_SHOT_REACT_DESCRIPTION,
+    verbose = True,
+    handle_parsing_errors = True,
+    agent_kwargs={"prefix": "Your name is SyntaxFixer. The ChangeType you propose is SyntaxFix.",
+                  "format_instructions": "You need to use your given tools to perform each task."}
 )
 
 synt_prompt = '''You are working in an organization responsible for improving the given code. You are assigned with the task of improving the syntax of the code. Your name is SyntaxFixer.

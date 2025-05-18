@@ -1,7 +1,7 @@
 # Importing dependencies
 from Agents.DocAgent import doc_agent, doc_memory, doc_prompt
 from Agents.Optimizer import optimizer, opt_memory, opt_prompt
-from Agents.Reviewer import review_agent, review_memory, reviewer_prompt
+from Agents.Reviewer import review_agent, reviewer_prompt
 from Agents.SyntaxFixer import syntax_agent, syntax_memory, synt_prompt
 from Agents.CodeWriter import code_writer, code_prompt
 from langchain.prompts import PromptTemplate
@@ -44,7 +44,6 @@ def workflow(task : str, language : str, prompt : str = None, user_code : str = 
     print(code_id)
     doc_agent.run(agent_prompt.format(code_id = code_id, language = language))
     syntax_agent.run(agent_prompt.format(code_id = code_id, language = language))
-    review_agent.run(agent_prompt.format(code_id = code_id, language = language))
     optimizer.run(agent_prompt.format(code_id = code_id, language = language))
 
     while True:
@@ -59,31 +58,18 @@ def workflow(task : str, language : str, prompt : str = None, user_code : str = 
             final_answer = review_agent.run("""Now, all the changes have been made to the code. Provide the user with the corrected code ONLY. 
             With suitable quantitative measures of how much improved the code is now. To check how much the code has improved check the view_code and compare it to original.""")
 
-            doc_memory.clear()
-            syntax_memory.clear()
-            review_memory.clear()
-            opt_memory.clear()
-
             return final_answer
 
         elif total_changes == 0 :
-            doc_agent.run("Your name : DocAgent, Your ChangeType : Documentation" + agent_prompt.format(code_id=code_id, language=language))
-            syntax_agent.run("Your name : SyntaxFixer, Your ChangeType : SyntaxFix." + agent_prompt.format(code_id=code_id, language=language))
-            review_agent.run("Your name : Reviewer." + agent_prompt.format(code_id=code_id, language=language))
-            optimizer.run("Your name : Optimizer, Your ChangeType : Optimization." + agent_prompt.format(code_id=code_id, language=language))
-            time.sleep(5)
+            review_agent.run(f"Your name : Reviewer. The agents are not proposing any changes, using interact_with_agent tool encourage every agent to propose changes. The code id is {code_id}")
             print("Done")
 
         else :
             print("started")
             doc_agent.run("Your name : DocAgent, Your ChangeType : Documentation. Keep going, all changes have not yet been evaluated for the previously given code.")
-            time.sleep(2)
             syntax_agent.run("Your name : SyntaxFixer, Your ChangeType : SyntaxFix. Keep going, all changes have not yet been evaluated for the previously given code.")
-            time.sleep(2)
             review_agent.run("Your name : Reviewer. Keep going, all changes have not yet been evaluated for the previously given code.")
-            time.sleep(2)
             optimizer.run("Your name : Optimizer, Your ChangeType : Optimization. Keep going, all changes have not yet been evaluated for the previously given code.")
-            time.sleep(2)
 
 
 if __name__ == "__main__" :

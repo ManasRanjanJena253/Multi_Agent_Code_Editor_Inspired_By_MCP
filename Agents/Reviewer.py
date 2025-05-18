@@ -1,12 +1,13 @@
 # Importing dependencies
 from langchain.prompts.prompt import PromptTemplate
-from langchain.memory import ConversationSummaryBufferMemory
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain.memory import ConversationBufferMemory
 from langchain.agents import initialize_agent, AgentType
 import os
 from dotenv import load_dotenv
-from Agents.agent_tools import tools
+from Agents.agent_tools import reviewer_tools
 
+
+from langchain_google_genai import ChatGoogleGenerativeAI
 load_dotenv()
 api_key = os.getenv('GOOGLE_API_KEY')
 
@@ -16,14 +17,15 @@ llm = ChatGoogleGenerativeAI(
     api_key = api_key
 )
 
-review_memory = ConversationSummaryBufferMemory(llm = llm)
-
 review_agent = initialize_agent(
     llm = llm,
-    memory = review_memory,
-    tools = tools,
-    agent = AgentType.OPENAI_MULTI_FUNCTIONS,
-    verbose = True
+    memory = ConversationBufferMemory(),
+    tools = reviewer_tools,
+    agent = AgentType.STRUCTURED_CHAT_ZERO_SHOT_REACT_DESCRIPTION,
+    verbose = True,
+    handle_parsing_errors = True,
+    agent_kwargs={"prefix": "Your name is Reviewer. You are the boss of all the other agents and need to keep an eye on everyone's work. You can't propose direct changes, but can interact with other agents.",
+                  "format_instructions": "You need to use your given tools to perform each task."}
 )
 
 reviewer_prompt = """You are working in an organization which is responsible for improving a given code and making it production ready. You are the leader/boss of this organization. Your name is Reviewer. 
