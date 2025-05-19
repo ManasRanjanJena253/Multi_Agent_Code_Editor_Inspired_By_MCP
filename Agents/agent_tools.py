@@ -317,75 +317,7 @@ def execute_changes(change_type : str, change_id : int, code_id : int):
             return f"The agents who disapproved your change are : {agents}. Try contacting them through interact_with_agent tool for there opinion or check there reasoning using check_opinion tool"
 
 tools = [
-    StructuredTool.from_function(
-        func=view_code,
-        name="view_code",
-        description="Retrieve the source code associated with a given CodeId for agents to analyze or modify.",
-        args_schema=ViewCodeInput
-    ),
-
-    StructuredTool.from_function(
-        func=fetch_recommended_changes,
-        name="fetch_recommended_changes",
-        description="Fetch all the suggested modifications for a specific ChangeId related to a CodeId.",
-        args_schema=FetchRecommendedChangesInput
-    ),
-
-    StructuredTool.from_function(
-        func=get_executed_changes,
-        name="get_executed_changes",
-        description="Get a list of all executed changes for a particular CodeId, including their final confidence scores.",
-        args_schema=GetExecuteChangesInput
-    ),
-
-    StructuredTool.from_function(
-        func=submit_score,
-        name="submit_score",
-        description="Submit a confidence score and reasoning for a proposed change. Access rules enforced by agent role and change type.",
-        args_schema=SubmitScoreInput
-    ),
-
-    StructuredTool.from_function(
-        func=propose_change,
-        name="propose_change",
-        description="Propose a new change (syntax fix, optimization, or documentation) for a code snippet. Agent type must align with change type.",
-        args_schema=ProposeChange
-    ),
-
-    StructuredTool.from_function(
-        func=check_opinion,
-        name="check_opinion",
-        description="Check other agents’ opinions and reasoning on a proposed change, optionally filtered by agent name.",
-        args_schema=CheckOpinion
-    ),
-
-    StructuredTool.from_function(
-        func=interact_with_agent,
-        name="interact_with_agent",
-        description="Initiate a message from one agent to another regarding a proposed change, enabling collaborative refinement or conflict resolution.",
-        args_schema=InteractWithAgentInput
-    ),
-
-    StructuredTool.from_function(
-        func=delete_proposal,
-        name="delete_proposal",
-        description="Allows agents to delete a proposed change they no longer believe is necessary or appropriate.",
-        args_schema=DeleteProposal
-    ),
-
-    StructuredTool.from_function(
-        func=give_final_confidence_score,
-        name="give_final_confidence_score",
-        description="Reviewer agent can give a final confidence score to a change once all suggested changes are executed.",
-        args_schema=FinalReviewInput
-    ),
-
-    StructuredTool.from_function(
-        func=execute_changes,
-        name="execute_changes",
-        description="If a change has full agent approval and high confidence, apply it to the code and notify all agents.",
-        args_schema=ExecuteChanges
-    )
+    view_code, fetch_recommended_changes, propose_change, execute_changes,
+    delete_proposal, interact_with_agent, give_final_confidence_score, check_opinion,
+    submit_score, get_executed_changes
 ]
-
-# print([tool.name for tool in tools])
