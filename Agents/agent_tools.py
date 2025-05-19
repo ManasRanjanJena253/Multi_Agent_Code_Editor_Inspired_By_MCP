@@ -15,22 +15,18 @@ suggested_changes = db['suggested_changes']    # Collection for logging in the i
 agent_workspace = db['agent_workspace']    # Collection to view changes and discuss upon those changes.
 code_base = db['CodeBase']
 
-# 1. View Code
 class ViewCodeInput(BaseModel):
     code_id: int
 
-# 2. Suggest Change
 class ProposeChange(BaseModel):
     code_id: int
     content: str
     change_type: str
     agent_name: str
 
-# 3. Execute Changes
 class GetExecuteChangesInput(BaseModel):
     code_id: int
 
-# 4. Submit Score
 class SubmitScoreInput(BaseModel):
     code_id: int
     change_id: int
@@ -38,16 +34,13 @@ class SubmitScoreInput(BaseModel):
     score: int
     reasoning: str
 
-# 5. Fetch Recommended Changes
 class FetchRecommendedChangesInput(BaseModel):
     code_id: int
     change_id: int
 
-# 6. Fetch Code With Changes
 class FetchCodeWithChangesInput(BaseModel):
     code_id: int
 
-# 7. Interact With Agent
 class InteractWithAgentInput(BaseModel):
     code_id: int
     change_id: int
@@ -55,8 +48,6 @@ class InteractWithAgentInput(BaseModel):
     source_agent: str
     message: str
 
-
-# 8. Final Review
 class FinalReviewInput(BaseModel):
     agent_name: str
     code_id: int
@@ -150,7 +141,7 @@ def propose_change(code_id : int, content : str, change_type : str, agent_name :
     for k in docs:
         if k["ChangeId"] == change_id:
             return "!!! THIS CHANGE_ID EXISTS ALREADY. TRY WITH OTHER CHANGE_ID !!!"
-    valid_changes = ['Documentation', 'SyntaxFix', 'Optimization']
+    """valid_changes = ['Documentation', 'SyntaxFix', 'Optimization']
     if change_type not in valid_changes:
         return "!!! CHANGE TYPE DOESN'T EXIST !!!"
     else:
@@ -158,10 +149,9 @@ def propose_change(code_id : int, content : str, change_type : str, agent_name :
             return "YOU ARE NOT AUTHORIZED FOR THIS CHANGE."
 
         if agent_name in ['SyntaxFixer', 'Optimizer'] and change_type == 'Documentation':
-            return "YOU ARE NOT AUTHORIZED FOR THIS CHANGE"
-
-        suggested_changes.insert_one({"CodeId": code_id, "ChangeId": change_id, "Content": content, "ChangeType": change_type})
-        return "Your Proposal Added Successfully"
+            return "YOU ARE NOT AUTHORIZED FOR THIS CHANGE"""
+    suggested_changes.insert_one({"CodeId": code_id, "ChangeId": change_id, "Content": content, "ChangeType": change_type})
+    return "Your Proposal Added Successfully"
 
 
 @tool('check_opinion', args_schema = CheckOpinion)
@@ -326,5 +316,76 @@ def execute_changes(change_type : str, change_id : int, code_id : int):
 
             return f"The agents who disapproved your change are : {agents}. Try contacting them through interact_with_agent tool for there opinion or check there reasoning using check_opinion tool"
 
-tools = [view_code, fetch_recommended_changes, interact_with_agent, submit_score, execute_changes, propose_change, delete_proposal, check_opinion]
-reviewer_tools = [view_code, fetch_recommended_changes, interact_with_agent, submit_score, execute_changes, propose_change, delete_proposal, check_opinion, give_final_confidence_score]
+tools = [
+    StructuredTool.from_function(
+        func=view_code,
+        name="view_code",
+        description="Retrieve the source code associated with a given CodeId for agents to analyze or modify.",
+        args_schema=ViewCodeInput
+    ),
+
+    StructuredTool.from_function(
+        func=fetch_recommended_changes,
+        name="fetch_recommended_changes",
+        description="Fetch all the suggested modifications for a specific ChangeId related to a CodeId.",
+        args_schema=FetchRecommendedChangesInput
+    ),
+
+    StructuredTool.from_function(
+        func=get_executed_changes,
+        name="get_executed_changes",
+        description="Get a list of all executed changes for a particular CodeId, including their final confidence scores.",
+        args_schema=GetExecuteChangesInput
+    ),
+
+    StructuredTool.from_function(
+        func=submit_score,
+        name="submit_score",
+        description="Submit a confidence score and reasoning for a proposed change. Access rules enforced by agent role and change type.",
+        args_schema=SubmitScoreInput
+    ),
+
+    StructuredTool.from_function(
+        func=propose_change,
+        name="propose_change",
+        description="Propose a new change (syntax fix, optimization, or documentation) for a code snippet. Agent type must align with change type.",
+        args_schema=ProposeChange
+    ),
+
+    StructuredTool.from_function(
+        func=check_opinion,
+        name="check_opinion",
+        description="Check other agents’ opinions and reasoning on a proposed change, optionally filtered by agent name.",
+        args_schema=CheckOpinion
+    ),
+
+    StructuredTool.from_function(
+        func=interact_with_agent,
+        name="interact_with_agent",
+        description="Initiate a message from one agent to another regarding a proposed change, enabling collaborative refinement or conflict resolution.",
+        args_schema=InteractWithAgentInput
+    ),
+
+    StructuredTool.from_function(
+        func=delete_proposal,
+        name="delete_proposal",
+        description="Allows agents to delete a proposed change they no longer believe is necessary or appropriate.",
+        args_schema=DeleteProposal
+    ),
+
+    StructuredTool.from_function(
+        func=give_final_confidence_score,
+        name="give_final_confidence_score",
+        description="Reviewer agent can give a final confidence score to a change once all suggested changes are executed.",
+        args_schema=FinalReviewInput
+    ),
+
+    StructuredTool.from_function(
+        func=execute_changes,
+        name="execute_changes",
+        description="If a change has full agent approval and high confidence, apply it to the code and notify all agents.",
+        args_schema=ExecuteChanges
+    )
+]
+
+# print([tool.name for tool in tools])

@@ -12,29 +12,46 @@ api_key = os.getenv('GOOGLE_API_KEY')
 
 llm = ChatGoogleGenerativeAI(
     model = 'gemini-2.0-flash',
-    temperature = 0.6,
+    temperature = 0.3,
     api_key = api_key
 )
-opt_memory = ConversationSummaryBufferMemory(llm = llm)
+opt_memory = ConversationBufferMemory(return_messages = True)
 
 optimizer = initialize_agent(
     llm = llm,
-    memory = ConversationBufferMemory(),
+    memory = opt_memory,
     tools = tools,
-    agent = AgentType.STRUCTURED_CHAT_ZERO_SHOT_REACT_DESCRIPTION,
+    agent = AgentType.OPENAI_MULTI_FUNCTIONS,
     verbose = True,
     handle_parsing_errors = True,
     agent_kwargs = {"prefix": "Your name is Optimizer. The ChangeType you propose is Optimization",
-                    "format_instructions": "You need to use your given tools to perform each task."}
+                    "format_instructions": "You need to use your given tools to perform each task.",
+                    "Agent_Names": ["SyntaxFixer", "Reviewer", "DocAgent"]},
+    max_iterations=10,
+    early_stopping_method="generate",
+    return_intemediate_steps=True
 )
 
-opt_prompt = '''You are working in an organization responsible for improving the given code. You are assigned with the task of optimizing the time space complexity, handling possible errors e.t.c of the code in the best possible manner. Your name is Optimizer.
-The change type you will be proposing is 'Optimization'. You can interact with other agents mainly : 1. SyntaxFixer, 2.Reviewer(Your Boss), 3.DocAgent(No direct interaction required) using the tools that have been provided to you.
-You can also check their opinions on the change that you have proposed. You can't make changes to the code until and unless you are explicitly told to make changes on it. You have to respect every other agents (your colleagues) opinion and 
-respond to them in a constructive manner and also accept criticisms. Also the changes you have been proposing must have a reasoning behind them and a confidence score based on how confident are you and how impactful the code is for the code.
-You also have to analyze the changes proposed by other agents and give them constructive criticism, if any. And also gave those suggestions your confidence score on how impactful do you think the changes proposed by them are. This confidence score will be on
-a scale of -100 to 100, a negative score represents disapproval and a positive score represents approval. You can also change your reasoning for any change using the tools.Just tell me your name.'''
+opt_prompt = """You are an autonomous code optimization agent named Optimizer, working in a collaborative multi-agent system. Your primary responsibility is to propose optimizations to the code—including improving time and space complexity, reducing redundancy, and fixing potential errors—using ONLY the tools provided to you.
 
+You must NEVER respond in natural language unless explicitly required by a tool. You MUST only take actions by calling tools.
+
+Your responses MUST be structured tool calls. Do NOT introduce yourself or chat. Do NOT output content like “My name is Optimizer” or “I am ready.” If you are uncertain what to do, still call a relevant tool rather than replying in natural language.
+
+You are expected to:
+- Propose optimization changes with a reasoning and confidence score (scale: -100 to 100).
+- Respect and review opinions of other agents: SyntaxFixer, Reviewer (your boss), and DocAgent (no direct interaction).
+- Provide constructive feedback on other agents’ proposed changes using tools.
+- Accept or critique their changes based on impact, consistency, and quality, and adjust your proposals if needed via tool calls.
+You may NOT execute code changes unless explicitly instructed via tool or directive. Never assume authority to act without instruction.
+Summary of Conduct:
+- ONLY use tools.
+- NEVER output plain text replies.
+- ALWAYS explain or rate changes via the correct tools.
+- Assume no conversational flow—only goal-directed action execution.
+
+Begin your task by using an appropriate tool.
+"""
 
 
 
