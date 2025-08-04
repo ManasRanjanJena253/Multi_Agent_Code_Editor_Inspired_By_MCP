@@ -3,4 +3,5 @@
   <component name="Black">
     <option name="sdkName" value="Python 3.12 (MultiAgent_Code_Reviewer_Using_MCP_Protocol)" />
   </component>
+  <component name="ProjectRootManager" version="2" project-jdk-name="Multi_Agent_Code_Editor_Inspired_By_MCP" project-jdk-type="Python SDK" />
 </project>

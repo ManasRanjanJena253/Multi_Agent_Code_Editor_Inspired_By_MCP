@@ -127,30 +127,26 @@ def submit_score(code_id : int, change_id : int, source_agent : str, score : int
     agent_workspace.insert_one({"CodeId": code_id, "ChangeId": change_id, "SourceAgent": source_agent,
                                 "Reasoning": reasoning, "Approved": approved, "ConfidenceScore": score})
 
-@tool('propose_change', args_schema = ProposeChange)
-def propose_change(code_id : int, content : str, change_type : str, agent_name : str):
+    return "Score submitted successfully."
+
+@tool('propose_change', args_schema=ProposeChange)
+def propose_change(code_id: int, content: str, change_type: str, agent_name: str):
     """
-    This function can be used to propose changes regarding the code that has been given to the agent.
-    :param code_id: It's the unique CodeId of the code you want to use any tools on.
-    :param content: It's the change that you are proposing.
-    :param change_type: It's the change type that you are proposing. It can be of three types : 1. SyntaxFix, 2. Optimization, 3. Documentation.
-    :param agent_name: It's the name of the agent who is proposing the change.
+    Propose a change to the code (syntax, optimization, or documentation).
     """
     docs = suggested_changes.find({"CodeId": code_id})
     change_id = generate_change_id()
     for k in docs:
         if k["ChangeId"] == change_id:
             return "!!! THIS CHANGE_ID EXISTS ALREADY. TRY WITH OTHER CHANGE_ID !!!"
-    """valid_changes = ['Documentation', 'SyntaxFix', 'Optimization']
-    if change_type not in valid_changes:
-        return "!!! CHANGE TYPE DOESN'T EXIST !!!"
-    else:
-        if agent_name == 'DocAgent' and change_type != 'Documentation':  # Restricting the access to other agents to decrease unnecessary noise and hallucination.
-            return "YOU ARE NOT AUTHORIZED FOR THIS CHANGE."
 
-        if agent_name in ['SyntaxFixer', 'Optimizer'] and change_type == 'Documentation':
-            return "YOU ARE NOT AUTHORIZED FOR THIS CHANGE"""
-    suggested_changes.insert_one({"CodeId": code_id, "ChangeId": change_id, "Content": content, "ChangeType": change_type})
+    suggested_changes.insert_one({
+        "CodeId": code_id,
+        "ChangeId": change_id,
+        "Content": content,
+        "ChangeType": change_type,
+        "AgentName": agent_name   # log who proposed it
+    })
     return "Your Proposal Added Successfully"
 
 

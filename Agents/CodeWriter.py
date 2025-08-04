@@ -9,8 +9,8 @@ from langchain.chains import LLMChain
 load_dotenv()
 api_key = os.getenv('GROQ_API_KEY')
 
-llm = ChatGroq(model_name = 'compound-beta-mini',
-               groq_api_key = api_key,
+llm = ChatGroq(model = 'compound-beta-mini',
+               api_key = api_key,
                temperature = 0.3)
 
 
