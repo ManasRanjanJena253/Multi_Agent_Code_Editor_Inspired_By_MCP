@@ -1,6 +1,7 @@
 # Importing dependencies
 from langchain.prompts.prompt import PromptTemplate
 from langchain.memory import ConversationBufferMemory
+from langchain.agents import AgentExecutor
 from langchain import LLMChain
 from langchain_core.messages import SystemMessage
 from langchain_groq import ChatGroq
@@ -21,7 +22,8 @@ llm = ChatGoogleGenerativeAI(
 )
 
 
-syntax_memory = ConversationBufferMemory(return_messages = True)
+syntax_memory = ConversationBufferMemory(return_messages = True,
+                                         input_key = "input")
 
 syntax_agent = initialize_agent(
     llm = llm,
@@ -35,7 +37,8 @@ syntax_agent = initialize_agent(
                   "Agent_Names": ["Reviewer", "Optimizer", "DocAgent"]},
     max_iterations=10,
     early_stopping_method="generate",
-    return_intemediate_steps=True
+    return_intemediate_steps=True,
+    force_tool_usage = True
 )
 
 synt_prompt = """You are an autonomous code syntax corrector agent named SyntaxFixer, working in a collaborative multi-agent system. Your primary responsibility is to propose syntax correction to the code keeping it professional, use ONLY the tools provided to you.
@@ -66,7 +69,7 @@ Summary of Conduct:
   }
 }
 
-Begin your task by using an appropriate tools
+Begin your task by using the appropriate tool.
 """
 
 
@@ -76,10 +79,3 @@ syntax_memory.chat_memory.messages.insert(
 syntax_memory.chat_memory.messages.append(
     AIMessage(content="Understood. I will follow every rule your provided strictly.")
 )
-
-from langchain_core.utils.function_calling import convert_to_openai_tool
-print([t.name for t in tools])
-for tool in tools:
-    print(convert_to_openai_tool(tool))
-
-

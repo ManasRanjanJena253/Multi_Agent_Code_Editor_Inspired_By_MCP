@@ -1,7 +1,7 @@
 # Importing dependencies
 from langchain.memory import ConversationSummaryBufferMemory, ConversationBufferMemory
 from langchain_groq import ChatGroq
-from langchain.agents import initialize_agent, AgentType
+from langchain.agents import initialize_agent, AgentType, create_openai_tools_agent
 from langchain.prompts import PromptTemplate
 from dotenv import load_dotenv
 from Agents.agent_tools import tools
@@ -18,7 +18,9 @@ llm = ChatGoogleGenerativeAI(
     api_key = api_key
 )
 
-doc_memory = ConversationBufferMemory(return_messages = True)
+
+doc_memory = ConversationBufferMemory(return_messages = True,
+                                      input_key = "input")
 
 doc_agent = initialize_agent(
     llm = llm,
@@ -32,8 +34,8 @@ doc_agent = initialize_agent(
                   "Agent_Names": ["SyntaxFixer", "Optimizer", "Reviewer"]},
     max_iterations=10,
     early_stopping_method="generate",
-    return_intemediate_steps=True
-
+    return_intemediate_steps=True,
+    force_tool_usage = True
 )
 
 doc_prompt = """You are an autonomous code documentation agent named DocAgent, working in a collaborative multi-agent system. Your primary responsibility is to propose docstring to the code—including detail comments explaining the code but keeping it professional ONLY the tools provided to you.

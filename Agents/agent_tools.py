@@ -145,7 +145,7 @@ def propose_change(code_id: int, content: str, change_type: str, agent_name: str
         "ChangeId": change_id,
         "Content": content,
         "ChangeType": change_type,
-        "AgentName": agent_name   # log who proposed it
+        "AgentName": agent_name   # logging who proposed it
     })
     return "Your Proposal Added Successfully"
 
@@ -311,6 +311,8 @@ def execute_changes(change_type : str, change_id : int, code_id : int):
                 agents.append(k['SourceAgent'])
 
             return f"The agents who disapproved your change are : {agents}. Try contacting them through interact_with_agent tool for there opinion or check there reasoning using check_opinion tool"
+        return None
+
 
 tools = [
     view_code, fetch_recommended_changes, propose_change, execute_changes,

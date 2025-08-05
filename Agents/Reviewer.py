@@ -17,7 +17,8 @@ llm = ChatGoogleGenerativeAI(
     api_key = api_key
 )
 
-review_memory = ConversationBufferMemory(return_messages = True)
+review_memory = ConversationBufferMemory(return_messages = True,
+                                         input_key = "input")
 
 review_agent = initialize_agent(
     llm = llm,
@@ -31,7 +32,8 @@ review_agent = initialize_agent(
                   "Agent_Names": ["SyntaxFixer", "Optimizer", "DocAgent"]},
     max_iterations = 10,
     early_stopping_method="generate",
-    return_intemediate_steps = True
+    return_intemediate_steps = True,
+    force_tool_usage = True
 )
 
 reviewer_prompt = """You are the lead reviewing agent named Reviewer, part of a collaborative multi-agent code refinement system. Your primary role is to supervise, critique, and ensure the quality and production-readiness of the code. You are the final authority and must assess all changes thoroughly using ONLY the tools provided.

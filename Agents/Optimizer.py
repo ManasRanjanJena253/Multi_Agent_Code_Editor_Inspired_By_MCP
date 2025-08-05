@@ -15,7 +15,8 @@ llm = ChatGoogleGenerativeAI(
     temperature = 0.3,
     api_key = api_key
 )
-opt_memory = ConversationBufferMemory(return_messages = True)
+opt_memory = ConversationBufferMemory(return_messages = True,
+                                      input_key = "input")
 
 optimizer = initialize_agent(
     llm = llm,
@@ -29,7 +30,8 @@ optimizer = initialize_agent(
                     "Agent_Names": ["SyntaxFixer", "Reviewer", "DocAgent"]},
     max_iterations=10,
     early_stopping_method="generate",
-    return_intemediate_steps=True
+    return_intemediate_steps=True,
+    force_tool_usage = True,
 )
 
 opt_prompt = """You are an autonomous code optimization agent named Optimizer, working in a collaborative multi-agent system. Your primary responsibility is to propose optimizations to the code—including improving time and space complexity, reducing redundancy, and fixing potential errors—using ONLY the tools provided to you.

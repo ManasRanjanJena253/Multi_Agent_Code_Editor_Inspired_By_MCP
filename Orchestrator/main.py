@@ -9,6 +9,7 @@ from langchain.prompts import PromptTemplate
 from pymongo import MongoClient
 import random
 from langchain.schema import HumanMessage, AIMessage
+from Agents.agent_tools import tools
 
 client = MongoClient(host = 'localhost', port = 27017)
 
@@ -22,6 +23,8 @@ syntax_memory.clear()
 doc_memory.clear()
 opt_memory.clear()
 review_memory.clear()
+
+tools_description = "\n".join([f"{t.name}: {t.description}" for t in tools])
 
 def agent_loop(prompt: str):
     """
@@ -45,11 +48,14 @@ def agent_loop(prompt: str):
         0, SystemMessage(content=reviewer_prompt)
     )
     print("doc_agent")
-    doc_agent.invoke({"input": prompt})
+    doc_agent.invoke({"input": prompt,
+                      "tools_available": tools_description})
     print("syntax_fixer")
-    syntax_agent.invoke({"input": prompt})
+    syntax_agent.invoke({"input": prompt,
+                         "tools_available": tools_description})
     print("optimizer")
-    optimizer.invoke({"input": prompt})
+    optimizer.invoke({"input": prompt,
+                      "tools_available": tools_description})
 
 def agent_workflow(code_id: int, code: str):
     """
@@ -81,23 +87,27 @@ def agent_workflow(code_id: int, code: str):
     # Reviewing the changes proposed
     #agent_loop(prompt = f"Now, all the changes have been proposed by the agents. Check every agents opinions using ONLY the tools given to you.")
     print("reviewer")
-    review_agent.invoke({"input": f"Now, all the changes have been proposed by the agents. Check every agents opinions using ONLY the tools given to you."})
+    review_agent.invoke({"input": f"Now, all the changes have been proposed by the agents. Check every agents opinions using ONLY the tools given to you.",
+                         "code_id": code_id})
 
     # Give scores
     #agent_loop(prompt = "Give your confidence_score to the proposed changes. using ONLY the tools given to you.")
     print("reviewer")
-    review_agent.invoke({"input": "Give your confidence_score to the proposed changes. using ONLY the tools given to you."})
+    review_agent.invoke({"input": "Give your confidence_score to the proposed changes. using ONLY the tools given to you.",
+                         "code_id": code_id})
 
     # Check for approval
     agent_loop(prompt = f"Now check if any of the changes you proposed can be executed or not. Using ONLY the tools given to you.")
 
     # Checking the executed changes
     print("reviewer")
-    review_agent.invoke({"input": "Check the agents that have been executed till now. Using ONLY the tools given to you."})
+    review_agent.invoke({"input": "Check the changes that have been executed till now. Using ONLY the tools given to you.",
+                         "code_id": code_id})
 
     # Interact with agent
     print("reviewer")
-    review_agent.invoke({"input": "If any anomaly found during checking executed changes. Interact with the agents using ONLY the tools given to you."})
+    review_agent.invoke({"input": "If any anomaly found during checking executed changes. Interact with the agents using ONLY the tools given to you.",
+                         "code_id": code_id})
 
     print("One Cycle Done !!!")
 
